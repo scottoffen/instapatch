@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{75853E2A-62B3-44A7-937B-0E718E05309E}") = "InstaPatch", "InstaPatch\InstaPatch.csproj", "{3B87EAFC-1426-45DD-AB68-BC8DFD3DAA62}"
+EndProject
+Project("{75853E2A-62B3-44A7-937B-0E718E05309E}") = "InstaPatch.Tests", "InstaPatch.Tests\InstaPatch.Tests.csproj", "{01CC1DB8-CBC7-4E17-A5FF-8BD9F4914E25}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{3B87EAFC-1426-45DD-AB68-BC8DFD3DAA62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3B87EAFC-1426-45DD-AB68-BC8DFD3DAA62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3B87EAFC-1426-45DD-AB68-BC8DFD3DAA62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3B87EAFC-1426-45DD-AB68-BC8DFD3DAA62}.Release|Any CPU.Build.0 = Release|Any CPU
+		{01CC1DB8-CBC7-4E17-A5FF-8BD9F4914E25}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{01CC1DB8-CBC7-4E17-A5FF-8BD9F4914E25}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{01CC1DB8-CBC7-4E17-A5FF-8BD9F4914E25}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{01CC1DB8-CBC7-4E17-A5FF-8BD9F4914E25}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
