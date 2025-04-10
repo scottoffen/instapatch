@@ -1,6 +1,9 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace InstaPatch;
 
-public static class OperationTypes
+[ExcludeFromCodeCoverage]
+internal static class OperationTypes
 {
     public static readonly OperationType RequiresGetter = OperationType.Test;
 
