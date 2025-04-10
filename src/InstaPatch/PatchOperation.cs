@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 
 namespace InstaPatch;
@@ -5,6 +6,7 @@ namespace InstaPatch;
 /// <summary>
 /// Represents a single patch operation.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public class PatchOperation
 {
     /// <summary>
@@ -24,6 +26,7 @@ public class PatchOperation
     /// <remarks>
     /// This property is optional and may be null for operations that do not require a value.
     /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? Value { get; set; }
 
     /// <summary>
@@ -32,5 +35,6 @@ public class PatchOperation
     /// <remarks>
     /// This property is optional and may be null for operations that do not require a source.
     /// </remarks>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
     public string? From { get; set; }
 }
