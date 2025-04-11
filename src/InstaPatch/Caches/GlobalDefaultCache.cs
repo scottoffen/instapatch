@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
-namespace InstaPatch;
+namespace InstaPatch.Caches;
 
 /// <summary>
-/// A static class that caches default values for different types.
+/// Caches default values for different types.
 /// </summary>
 internal static class GlobalDefaultCache
 {
-    private static readonly ConcurrentDictionary<Type, object?> DefaultsCache = new();
+    internal static readonly ConcurrentDictionary<Type, object?> DefaultsCache = new();
 
     static GlobalDefaultCache()
     {
@@ -28,7 +28,9 @@ internal static class GlobalDefaultCache
         DefaultsCache.TryAdd(typeof(char), default(char));
         DefaultsCache.TryAdd(typeof(string), null); // Reference type: default is null.
         DefaultsCache.TryAdd(typeof(DateTime), default(DateTime));
+#if NET6_0_OR_GREATER
         DefaultsCache.TryAdd(typeof(DateOnly), default(DateOnly));
+#endif
     }
 
     /// <summary>

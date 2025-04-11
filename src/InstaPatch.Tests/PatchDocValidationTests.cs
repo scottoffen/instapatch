@@ -1,3 +1,5 @@
+using InstaPatch.Helpers;
+
 namespace InstaPatch.Tests;
 
 public class PatchDocValidationTests
@@ -25,7 +27,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessageOperationRequiresPath, operation.Op));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationRequiresPath, operation.Op));
     }
 
     [Fact]
@@ -44,7 +46,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessagePropertyNotReadable, operation.Path));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotReadable, operation.Path));
     }
 
     [Theory]
@@ -67,7 +69,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessagePropertyNotWriteable, operation.Path));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotWriteable, operation.Path));
     }
 
     [Theory]
@@ -87,7 +89,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessageOperationRequiresValue, operation.Op));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationRequiresValue, operation.Op));
     }
 
     [Theory]
@@ -107,7 +109,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessageOperationRequiresFrom, operation.Op));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationRequiresFrom, operation.Op));
     }
 
     [Theory]
@@ -128,7 +130,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<ValidateMe>.ErrorMessagePropertyNotReadable, operation.From));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotReadable, operation.From));
     }
 
     [Fact]

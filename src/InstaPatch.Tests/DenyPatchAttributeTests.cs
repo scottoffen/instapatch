@@ -1,4 +1,5 @@
 using InstaPatch;
+using InstaPatch.Helpers;
 
 namespace InstaPatch.Tests;
 
@@ -20,7 +21,7 @@ public class DenyPatchAttributeTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<DenyPatchClass>.ErrorMessageTypeNotPatchable, nameof(DenyPatchClass)));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<DenyPatchClass>.TypeNotPatchable, nameof(DenyPatchClass)));
 
         PatchDoc<DenyPatchClass>.IsValid([operation]).ShouldBeFalse();
     }
@@ -106,7 +107,7 @@ public class DenyPatchAttributeTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(PatchDoc<AllowPartialPatch>.ErrorMessagePropertyNotWriteable, "/property2"));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<AllowPartialPatch>.PropertyNotWriteable, "/property2"));
 
         PatchDoc<AllowPartialPatch>.IsValid(operations).ShouldBeFalse();
     }

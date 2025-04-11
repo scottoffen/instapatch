@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
-using System.Linq.Expressions;
 using System.Reflection;
+using InstaPatch.Caches;
+using InstaPatch.Helpers;
 
 namespace InstaPatch;
 
@@ -10,86 +11,12 @@ namespace InstaPatch;
 /// <typeparam name="T"></typeparam>
 public static class PatchDoc<T> where T : class
 {
-    internal static readonly Type CurrentType = typeof(T);
-
-    internal static readonly HashSet<string> PropertyNames = new();
-    internal static readonly Dictionary<string, Func<object, object, bool>> PropertyComparers = new(StringComparer.OrdinalIgnoreCase);
-    internal static readonly Dictionary<string, object?> PropertyDefaults = new(StringComparer.OrdinalIgnoreCase);
-    internal static readonly Dictionary<string, Func<T, object?>> PropertyGetters = new(StringComparer.OrdinalIgnoreCase);
-    internal static readonly Dictionary<string, Action<T, object?>> PropertySetters = new(StringComparer.OrdinalIgnoreCase);
-    internal static readonly Dictionary<string, Type> PropertyTypes = new(StringComparer.OrdinalIgnoreCase);
-
-    internal static readonly Func<T, T>? ShallowClone = null;
-
-    internal static bool IsPatchable { get; private set; } = true;
-
-    internal static readonly string ErrorMessageTypeNotPatchable = $"Type {CurrentType.Name} cannot be patched. This is either because it has the {nameof(DenyPatchAttribute)} attribute or all of its properties are read-only or have the {nameof(DenyPatchAttribute)} attribute.";
-    internal static readonly string ErrorMessageOperationNotSupported = "{0} operation is not supported.";
-    internal static readonly string ErrorMessageOperationRequiresPath = "{0} operation requires a path.";
-    internal static readonly string ErrorMessageOperationRequiresValue = "{0} operation requires a value.";
-    internal static readonly string ErrorMessageOperationRequiresFrom = "{0} operation requires a from path.";
-    internal static readonly string ErrorMessagePropertyNotReadable = $"Property '{{0}}' is missing or cannot be read from type {CurrentType.Name}.";
-    internal static readonly string ErrorMessagePropertyNotWriteable = $"Property '{{0}}' is missing or does not support patching on type {CurrentType.Name}.";
-    internal static readonly string ErrorMessageOperationTestFailed = "Expected value {0} does not equal actual value {1}.";
+    private static bool IsPatchable { get; }
 
     static PatchDoc()
     {
-        var denyPatchAttribute = CurrentType.GetCustomAttribute<DenyPatchAttribute>();
-        if (denyPatchAttribute == null)
-        {
-            var properties = CurrentType
-                .GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-            foreach (var property in properties)
-            {
-                var name = property.Name ??
-                    throw new InvalidOperationException($"Property {property.Name} is null.");
-
-                if (property.CanRead)
-                {
-                    var instanceParam = Expression.Parameter(typeof(T), "instance");
-                    var propertyAccess = Expression.Property(instanceParam, property);
-                    var convert = Expression.Convert(propertyAccess, typeof(object));
-                    var getter = Expression.Lambda<Func<T, object?>>(convert, instanceParam).Compile();
-
-                    PropertyGetters.Add(name, getter);
-                    PropertyComparers.Add(name, GlobalComparerCache.GetComparer(property.PropertyType));
-                }
-
-                if (property.CanWrite && property.GetCustomAttribute<DenyPatchAttribute>() == null)
-                {
-                    var instanceParam = Expression.Parameter(typeof(T), "instance");
-                    var valueParam = Expression.Parameter(typeof(object), "value");
-                    var convert = Expression.Convert(valueParam, property.PropertyType);
-                    var caller = Expression.Call(instanceParam, property.GetSetMethod()!, convert);
-                    var setter = Expression.Lambda<Action<T, object?>>(caller, instanceParam, valueParam).Compile();
-
-                    PropertySetters.Add(name, setter);
-                    PropertyDefaults.Add(name, GlobalDefaultCache.GetDefault(property.PropertyType));
-                    PropertyNames.Add(name);
-                }
-            }
-
-            IsPatchable = PropertyNames.Count > 0;
-
-            if (IsPatchable)
-            {
-                var method = CurrentType.GetMethod("MemberwiseClone", BindingFlags.Instance | BindingFlags.NonPublic);
-                if (method != null)
-                {
-                    var sourceParam = Expression.Parameter(CurrentType, "source");
-                    var castedSource = Expression.Convert(sourceParam, CurrentType);
-                    var caller = Expression.Call(castedSource, method);
-                    var convert = Expression.Convert(caller, CurrentType);
-                    var lambda = Expression.Lambda<Func<T, T>>(convert, sourceParam).Compile();
-                    ShallowClone = lambda;
-                }
-            }
-        }
-        else
-        {
-            IsPatchable = false;
-        }
+        var denyPatchAttribute = typeof(T).GetCustomAttribute<DenyPatchAttribute>();
+        IsPatchable = denyPatchAttribute == null && PropertySetterCache<T>.Any();
     }
 
     /// <summary>
@@ -102,12 +29,23 @@ public static class PatchDoc<T> where T : class
         return !Validate(operations).Any();
     }
 
+    /// <summary>
+    /// Applies the given operations to the instance.
+    /// </summary>
+    /// <param name="instance"></param>
+    /// <param name="operations"></param>
+    /// <param name="results"></param>
+    /// <returns>True if all operations were applied successfully.</returns>
+    /// <exception cref="InvalidOperationException"></exception>
     public static bool TryApplyPatch(T instance, IEnumerable<PatchOperation> operations, out IEnumerable<PatchExecutionResult> results)
     {
-        if (!IsPatchable) throw new InvalidOperationException(ErrorMessageTypeNotPatchable);
+        if (!IsPatchable) throw new InvalidOperationException(ErrorMessages<T>.TypeNotPatchable);
+        if (!TypeCloneCache<T>.TryCreateClone(instance, out var clone))
+        {
+            throw new InvalidOperationException(ErrorMessages<T>.PropertyNotWriteable);
+        }
 
         var executions = new List<PatchExecutionResult>();
-        var clone = ShallowClone!(instance);
 
         foreach (var operation in operations)
         {
@@ -118,18 +56,16 @@ public static class PatchDoc<T> where T : class
 
         if (executions.All(x => x.Success))
         {
-            foreach (var setter in PropertySetters)
+            foreach (var setter in PropertySetterCache<T>.Values)
             {
-                var value = PropertyGetters[setter.Key](clone);
+                var value = PropertyGetterCache<T>.Values[setter.Key](clone);
                 setter.Value(instance, value);
             }
 
             return true;
         }
-        else
-        {
-            return false;
-        }
+
+        return false;
     }
 
     /// <summary>
@@ -143,26 +79,26 @@ public static class PatchDoc<T> where T : class
         {
             foreach (var operation in operations)
             {
-                var path = GetPropertyName(operation.Path);
+                var path = GetPropertyName(operation.Path) ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(path))
                 {
-                    yield return new ValidationResult(string.Format(ErrorMessageOperationRequiresPath, operation.Op));
+                    yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresPath, operation.Op));
                 }
                 else
                 {
                     if (OperationTypes.RequiresGetter.HasFlag(operation.Op))
                     {
-                        if (!PropertyGetters.ContainsKey(path))
+                        if (!PropertyGetterCache<T>.Contains(path))
                         {
-                            yield return new ValidationResult(string.Format(ErrorMessagePropertyNotReadable, operation.Path));
+                            yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotReadable, operation.Path));
                         }
                     }
 
                     if (OperationTypes.RequiresSetter.HasFlag(operation.Op))
                     {
-                        if (!PropertySetters.ContainsKey(path))
+                        if (!PropertySetterCache<T>.Contains(path))
                         {
-                            yield return new ValidationResult(string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+                            yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
                         }
                     }
                 }
@@ -171,28 +107,28 @@ public static class PatchDoc<T> where T : class
                 {
                     if (operation.Value == null)
                     {
-                        yield return new ValidationResult(string.Format(ErrorMessageOperationRequiresValue, operation.Op));
+                        yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresValue, operation.Op));
                     }
                 }
 
                 if (OperationTypes.RequiresFrom.HasFlag(operation.Op))
                 {
-                    var fromPath = GetPropertyName(operation.From);
+                    var fromPath = GetPropertyName(operation.From) ?? string.Empty;
 
                     if (string.IsNullOrWhiteSpace(fromPath))
                     {
-                        yield return new ValidationResult(string.Format(ErrorMessageOperationRequiresFrom, operation.Op));
+                        yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresFrom, operation.Op));
                     }
-                    else if (!PropertyGetters.ContainsKey(fromPath))
+                    else if (!PropertyGetterCache<T>.Contains(fromPath))
                     {
-                        yield return new ValidationResult(string.Format(ErrorMessagePropertyNotReadable, operation.From));
+                        yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotReadable, operation.From));
                     }
                 }
             }
         }
         else
         {
-            yield return new ValidationResult(ErrorMessageTypeNotPatchable);
+            yield return new ValidationResult(ErrorMessages<T>.TypeNotPatchable);
         }
     }
 
@@ -201,7 +137,7 @@ public static class PatchDoc<T> where T : class
         var path = GetPropertyName(operation.Path);
         if (path == null)
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationRequiresPath, operation.Op));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationRequiresPath, operation.Op));
         }
 
         switch (operation.Op)
@@ -219,31 +155,31 @@ public static class PatchDoc<T> where T : class
             case OperationType.Test:
                 return TryApplyTest(instance, path, operation);
             default:
-                return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationNotSupported, operation.Op));
+                return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationNotSupported, operation.Op));
         }
     }
 
     internal static PatchExecutionResult TryApplyAdd(T instance, string path, PatchOperation operation)
     {
-        return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationNotSupported, operation.Op));
+        return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationNotSupported, operation.Op));
     }
 
     internal static PatchExecutionResult TryApplyCopy(T instance, string path, PatchOperation operation)
     {
-        var from = GetPropertyName(operation.From);
+        var from = GetPropertyName(operation.From) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(from))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationRequiresFrom, operation.Op));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationRequiresFrom, operation.Op));
         }
 
-        if (!PropertyGetters.TryGetValue(from, out var getter))
+        if (!PropertyGetterCache<T>.TryGetValue(from, out var getter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotReadable, operation.From));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotReadable, operation.From));
         }
 
-        if (!PropertySetters.TryGetValue(path, out var setter))
+        if (!PropertySetterCache<T>.TryGetValue(path, out var setter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
         }
 
         try
@@ -260,30 +196,30 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyMove(T instance, string path, PatchOperation operation)
     {
-        var from = GetPropertyName(operation.From);
+        var from = GetPropertyName(operation.From) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(from))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationRequiresFrom, operation.Op));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationRequiresFrom, operation.Op));
         }
 
-        if (!PropertyGetters.TryGetValue(from, out var sourceGetter))
+        if (!PropertyGetterCache<T>.TryGetValue(from, out var sourceGetter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotReadable, operation.From));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotReadable, operation.From));
         }
 
-        if (!PropertySetters.TryGetValue(path, out var destinationSetter))
+        if (!PropertySetterCache<T>.TryGetValue(path, out var destinationSetter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
         }
 
-        if (!PropertySetters.TryGetValue(from, out var sourceSetter))
+        if (!PropertySetterCache<T>.TryGetValue(from, out var sourceSetter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.From));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.From));
         }
 
-        if (!PropertyDefaults.TryGetValue(from, out var defaultValue))
+        if (!PropertyDefaultsCache<T>.TryGetValue(from, out var defaultValue))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.From));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.From));
         }
 
         try
@@ -301,14 +237,14 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyRemove(T instance, string path, PatchOperation operation)
     {
-        if (!PropertySetters.TryGetValue(path, out var setter))
+        if (!PropertySetterCache<T>.TryGetValue(path, out var setter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
         }
 
-        if (!PropertyDefaults.TryGetValue(path, out var defaultValue))
+        if (!PropertyDefaultsCache<T>.TryGetValue(path, out var defaultValue))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
         }
 
         try
@@ -324,9 +260,9 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyReplace(T instance, string path, PatchOperation operation)
     {
-        if (!PropertySetters.TryGetValue(path, out var setter))
+        if (!PropertySetterCache<T>.TryGetValue(path, out var setter))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotWriteable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
         }
 
         try
@@ -342,12 +278,9 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyTest(T instance, string path, PatchOperation operation)
     {
-        var getter = PropertyGetters[path];
-        var comparer = PropertyComparers[path];
-
-        if (getter == null || comparer == null)
+        if (!PropertyGetterCache<T>.TryGetValue(path, out var getter) || !PropertyComparerCache<T>.TryGetValue(path, out var comparer))
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessagePropertyNotReadable, operation.Path));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.PropertyNotReadable, operation.Path));
         }
 
         var value = getter(instance);
@@ -357,14 +290,14 @@ public static class PatchDoc<T> where T : class
         }
         else if (value == null || operation.Value == null)
         {
-            return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationTestFailed, operation.Value, value));
+            return new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationTestFailed, operation.Value, value));
         }
 
         try
         {
             return (comparer(value, operation.Value))
                 ? new PatchExecutionResult(operation)
-                : new PatchExecutionResult(operation, string.Format(ErrorMessageOperationTestFailed, operation.Value, value));
+                : new PatchExecutionResult(operation, string.Format(ErrorMessages<T>.OperationTestFailed, operation.Value, value));
         }
         catch (Exception ex)
         {

@@ -34,7 +34,7 @@ public class SerializationTests
         operation.ShouldSatisfyAllConditions(
             () => operation!.Op.ShouldBe(OperationType.Replace),
             () => operation.Path.ShouldBe("/phone"),
-            () => operation.Value.ShouldBe("value")
+            () => operation.Value?.ToString().ShouldBe("value")
         );
     }
 }
