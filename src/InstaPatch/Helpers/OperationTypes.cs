@@ -1,6 +1,6 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace InstaPatch;
+namespace InstaPatch.Helpers;
 
 [ExcludeFromCodeCoverage]
 internal static class OperationTypes

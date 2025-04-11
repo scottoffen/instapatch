@@ -1,9 +1,9 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace InstaPatch;
+namespace InstaPatch.Converters;
 
-public class OperationTypeConverter : JsonConverter<OperationType>
+internal class OperationTypeConverter : JsonConverter<OperationType>
 {
     public override OperationType Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
     {

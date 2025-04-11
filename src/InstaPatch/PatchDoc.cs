@@ -1,6 +1,8 @@
 using System.ComponentModel.DataAnnotations;
 using System.Linq.Expressions;
 using System.Reflection;
+using InstaPatch.Caches;
+using InstaPatch.Helpers;
 
 namespace InstaPatch;
 
@@ -143,7 +145,7 @@ public static class PatchDoc<T> where T : class
         {
             foreach (var operation in operations)
             {
-                var path = GetPropertyName(operation.Path);
+                var path = GetPropertyName(operation.Path) ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(path))
                 {
                     yield return new ValidationResult(string.Format(ErrorMessageOperationRequiresPath, operation.Op));
@@ -177,7 +179,7 @@ public static class PatchDoc<T> where T : class
 
                 if (OperationTypes.RequiresFrom.HasFlag(operation.Op))
                 {
-                    var fromPath = GetPropertyName(operation.From);
+                    var fromPath = GetPropertyName(operation.From) ?? string.Empty;
 
                     if (string.IsNullOrWhiteSpace(fromPath))
                     {
@@ -230,7 +232,7 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyCopy(T instance, string path, PatchOperation operation)
     {
-        var from = GetPropertyName(operation.From);
+        var from = GetPropertyName(operation.From) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(from))
         {
             return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationRequiresFrom, operation.Op));
@@ -260,7 +262,7 @@ public static class PatchDoc<T> where T : class
 
     internal static PatchExecutionResult TryApplyMove(T instance, string path, PatchOperation operation)
     {
-        var from = GetPropertyName(operation.From);
+        var from = GetPropertyName(operation.From) ?? string.Empty;
         if (string.IsNullOrWhiteSpace(from))
         {
             return new PatchExecutionResult(operation, string.Format(ErrorMessageOperationRequiresFrom, operation.Op));

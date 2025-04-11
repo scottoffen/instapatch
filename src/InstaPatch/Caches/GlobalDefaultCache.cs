@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using System.Linq.Expressions;
 
-namespace InstaPatch;
+namespace InstaPatch.Caches;
 
 /// <summary>
 /// A static class that caches default values for different types.
@@ -28,7 +28,7 @@ internal static class GlobalDefaultCache
         DefaultsCache.TryAdd(typeof(char), default(char));
         DefaultsCache.TryAdd(typeof(string), null); // Reference type: default is null.
         DefaultsCache.TryAdd(typeof(DateTime), default(DateTime));
-        DefaultsCache.TryAdd(typeof(DateOnly), default(DateOnly));
+        // DefaultsCache.TryAdd(typeof(DateOnly), default(DateOnly));
     }
 
     /// <summary>

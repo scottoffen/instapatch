@@ -2,7 +2,7 @@ using System.Collections.Concurrent;
 using System.Linq.Expressions;
 using System.Reflection;
 
-namespace InstaPatch;
+namespace InstaPatch.Caches;
 
 /// <summary>
 /// A static class that caches comparers for different types.
@@ -29,7 +29,7 @@ internal static class GlobalComparerCache
         ComparersCache.TryAdd(typeof(char), CreateComparer<char>());
         ComparersCache.TryAdd(typeof(string), CreateComparer<string>());
         ComparersCache.TryAdd(typeof(DateTime), CreateComparer<DateTime>());
-        ComparersCache.TryAdd(typeof(DateOnly), CreateComparer<DateOnly>());
+        //ComparersCache.TryAdd(typeof(DateOnly), CreateComparer<DateOnly>());
     }
 
     /// <summary>
