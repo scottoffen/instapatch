@@ -27,7 +27,7 @@ public class PatchOperation
     /// This property is optional and may be null for operations that do not require a value.
     /// </remarks>
     [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-    public string? Value { get; set; }
+    public object? Value { get; set; }
 
     /// <summary>
     /// The JSON-pointer path to the source location.
