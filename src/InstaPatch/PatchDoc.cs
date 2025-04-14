@@ -79,50 +79,10 @@ public static class PatchDoc<T> where T : class
         {
             foreach (var operation in operations)
             {
-                var path = GetPropertyName(operation.Path) ?? string.Empty;
-                if (string.IsNullOrWhiteSpace(path))
+                var result = OperationValidator<T>.Validate(operation);
+                if (result != ValidationResult.Success && result != null)
                 {
-                    yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresPath, operation.Op));
-                }
-                else
-                {
-                    if (OperationTypes.RequiresGetter.HasFlag(operation.Op))
-                    {
-                        if (!PropertyGetterCache<T>.Contains(path))
-                        {
-                            yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotReadable, operation.Path));
-                        }
-                    }
-
-                    if (OperationTypes.RequiresSetter.HasFlag(operation.Op))
-                    {
-                        if (!PropertySetterCache<T>.Contains(path))
-                        {
-                            yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotWriteable, operation.Path));
-                        }
-                    }
-                }
-
-                if (OperationTypes.RequiresValue.HasFlag(operation.Op))
-                {
-                    if (operation.Value == null)
-                    {
-                        yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresValue, operation.Op));
-                    }
-                }
-
-                if (OperationTypes.RequiresFrom.HasFlag(operation.Op))
-                {
-                    var fromPath = GetPropertyName(operation.From) ?? string.Empty;
-
-                    if (string.IsNullOrWhiteSpace(fromPath))
-                    {
-                        yield return new ValidationResult(string.Format(ErrorMessages<T>.OperationRequiresFrom, operation.Op));
-                    }
-                    else if (!PropertyGetterCache<T>.Contains(fromPath))
-                    {
-                        yield return new ValidationResult(string.Format(ErrorMessages<T>.PropertyNotReadable, operation.From));
-                    }
+                    yield return result;
                 }
             }
         }

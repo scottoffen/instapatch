@@ -27,7 +27,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationRequiresPath, operation.Op));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationPathNotValid, operation.Op, operation.Path));
     }
 
     [Fact]
@@ -46,7 +46,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotReadable, operation.Path));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationPathNotValid, operation.Op, operation.Path));
     }
 
     [Theory]
@@ -69,7 +69,7 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotWriteable, operation.Path));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationPathNotValid, operation.Op, operation.Path));
     }
 
     [Theory]
@@ -130,12 +130,14 @@ public class PatchDocValidationTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.PropertyNotReadable, operation.From));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<ValidateMe>.OperationFromNotValid, operation.Op, operation.From));
     }
 
     [Fact]
     public void Validate_ReturnsNoErrors_WhenAllOperationsAreValid()
     {
+        PatchDoc<ValidateMe>.Validate([]).ShouldBeEmpty();
+
         var operations = new List<PatchOperation>
         {
             new()
@@ -153,8 +155,8 @@ public class PatchDocValidationTests
             new()
             {
                 Op = OperationType.Move,
-                Path = "/property1",
-                From = "/property2",
+                Path = "/property0",
+                From = "/property1",
             },
             new()
             {

@@ -2,7 +2,7 @@ namespace InstaPatch.Helpers;
 
 internal static class ErrorMessages<T>
 {
-    private static readonly string TypeName = typeof(T).Name;
+    private static readonly string _typeName = typeof(T).Name;
 
     /// <summary>
     /// The error message for when a type is not patchable.
@@ -11,7 +11,27 @@ internal static class ErrorMessages<T>
     /// Placeholders:
     /// none
     /// </remarks>
-    public static readonly string TypeNotPatchable = $"Type {TypeName} cannot be patched. This is either because it has the {nameof(DenyPatchAttribute)} attribute or all of its properties are read-only or have the {nameof(DenyPatchAttribute)} attribute.";
+    public static readonly string TypeNotPatchable = $"Type {_typeName} cannot be patched. This is either because it has the {nameof(DenyPatchAttribute)} attribute or all of its properties are read-only or have the {nameof(DenyPatchAttribute)} attribute.";
+
+    /// <summary>
+    /// The error message for when an operation from is not valid.
+    /// </summary>
+    /// <remarks>
+    /// Placeholders:
+    /// 0 - operation name
+    /// 1 - operation from
+    /// </remarks>
+    public static readonly string OperationFromNotValid = $"{{0}} operation from '{{1}}' is not valid for type {_typeName}.";
+
+    /// <summary>
+    /// The error message for when an operation path is not valid.
+    /// </summary>
+    /// <remarks>
+    /// Placeholders:
+    /// 0 - operation name
+    /// 1 - operation path
+    /// </remarks>
+    public static readonly string OperationPathNotValid = $"{{0}} operation path '{{1}}' is not valid for type {_typeName}.";
 
     /// <summary>
     /// The error message for when an operation is not supported.
@@ -56,7 +76,7 @@ internal static class ErrorMessages<T>
     /// Placeholders:
     /// 0 - property name
     /// </remarks>
-    public static readonly string PropertyNotReadable = $"Property '{{0}}' is missing or cannot be read from type {TypeName}.";
+    public static readonly string PropertyNotReadable = $"Property '{{0}}' is missing or cannot be read from type {_typeName}.";
 
     /// <summary>
     /// The error message for when a property is not writeable.
@@ -65,7 +85,7 @@ internal static class ErrorMessages<T>
     /// Placeholders:
     /// 0 - property name
     /// </remarks>
-    public static readonly string PropertyNotWriteable = $"Property '{{0}}' is missing or does not support patching on type {TypeName}.";
+    public static readonly string PropertyNotWriteable = $"Property '{{0}}' is missing or does not support patching on type {_typeName}.";
 
     /// <summary>
     /// The error message for when an operation fails.

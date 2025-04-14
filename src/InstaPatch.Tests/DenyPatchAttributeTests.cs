@@ -82,6 +82,9 @@ public class DenyPatchAttributeTests
     [Fact]
     public void Validate_ReturnsError_WhenAttemptingToPatchDenyPatchProperty()
     {
+        var operationType = OperationType.Replace;
+        var operationPath = "/property2";
+
         var operations = new List<PatchOperation>
         {
             new() {
@@ -90,8 +93,8 @@ public class DenyPatchAttributeTests
                 Value = "value"
             },
             new() {
-                Op = OperationType.Replace,
-                Path = "/property2",
+                Op = operationType,
+                Path = operationPath,
                 Value = "value"
             },
             new() {
@@ -107,7 +110,7 @@ public class DenyPatchAttributeTests
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<AllowPartialPatch>.PropertyNotWriteable, "/property2"));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<AllowPartialPatch>.OperationPathNotValid, operationType, operationPath));
 
         PatchDoc<AllowPartialPatch>.IsValid(operations).ShouldBeFalse();
     }

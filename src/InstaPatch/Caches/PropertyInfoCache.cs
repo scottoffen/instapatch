@@ -11,7 +11,7 @@ internal static class PropertyInfoCache<T>
     /// <summary>
     /// Cached property info for all public instance properties of the type.
     /// </summary>
-    public static readonly Dictionary<string, PropertyInfo> Values = new();
+    public static readonly Dictionary<string, PropertyInfo> Values = new(StringComparer.OrdinalIgnoreCase);
 
     static PropertyInfoCache()
     {
