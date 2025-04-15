@@ -3,10 +3,10 @@ using InstaPatch.Helpers;
 
 namespace InstaPatch.Tests;
 
-public class DenyPatchAttributeTests
+public class PreventPatchAttributeTests
 {
     [Fact]
-    public void Validate_ReturnsError_WhenClassHasDenyPatchAttribute()
+    public void Validate_ReturnsError_WhenClassHasPreventPatchAttribute()
     {
         var operation = new PatchOperation
         {
@@ -15,15 +15,15 @@ public class DenyPatchAttributeTests
             Value = "value"
         };
 
-        var results = PatchDoc<DenyPatchClass>.Validate([operation]).ToArray();
+        var results = PatchDoc<PreventPatchClass>.Validate([operation]).ToArray();
         results.ShouldNotBeNull();
         results.Length.ShouldBe(1);
 
         var result = results.FirstOrDefault();
         result.ShouldNotBeNull();
-        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<DenyPatchClass>.TypeNotPatchable, nameof(DenyPatchClass)));
+        result.ErrorMessage.ShouldBe(string.Format(ErrorMessages<PreventPatchClass>.TypeNotPatchable, nameof(PreventPatchClass)));
 
-        PatchDoc<DenyPatchClass>.IsValid([operation]).ShouldBeFalse();
+        PatchDoc<PreventPatchClass>.IsValid([operation]).ShouldBeFalse();
     }
 
     [Fact]
@@ -80,7 +80,7 @@ public class DenyPatchAttributeTests
     }
 
     [Fact]
-    public void Validate_ReturnsError_WhenAttemptingToPatchDenyPatchProperty()
+    public void Validate_ReturnsError_WhenAttemptingToPatchPreventPatchProperty()
     {
         var operationType = OperationType.Replace;
         var operationPath = "/property2";
@@ -117,8 +117,8 @@ public class DenyPatchAttributeTests
 }
 
 
-[DenyPatch]
-public class DenyPatchClass
+[PreventPatch]
+public class PreventPatchClass
 {
     public string Property1 { get; set; } = null!;
 
@@ -131,7 +131,7 @@ public class AllowPartialPatch
 {
     public string Property1 { get; set; } = null!;
 
-    [DenyPatch]
+    [PreventPatch]
     public string Property2 { get; set; } = null!;
 
     public string Property3 { get; set; } = null!;

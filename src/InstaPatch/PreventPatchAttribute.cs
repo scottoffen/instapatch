@@ -7,7 +7,7 @@ namespace InstaPatch;
 /// </summary>
 [ExcludeFromCodeCoverage]
 [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false)]
-public class DenyPatchAttribute : Attribute
+public class PreventPatchAttribute : Attribute
 {
 
 }

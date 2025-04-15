@@ -23,7 +23,7 @@ internal static class PropertySetterCache<T>
     {
         foreach (var property in PropertyInfoCache<T>.Values.Values)
         {
-            if (property.CanWrite && property.GetCustomAttribute<DenyPatchAttribute>() == null)
+            if (property.CanWrite && property.GetCustomAttribute<PreventPatchAttribute>() == null)
             {
                 var instanceParam = Expression.Parameter(typeof(T), "instance");
                 var valueParam = Expression.Parameter(typeof(object), "value");

@@ -11,7 +11,7 @@ internal static class ErrorMessages<T>
     /// Placeholders:
     /// none
     /// </remarks>
-    public static readonly string TypeNotPatchable = $"Type {_typeName} cannot be patched. This is either because it has the {nameof(DenyPatchAttribute)} attribute or all of its properties are read-only or have the {nameof(DenyPatchAttribute)} attribute.";
+    public static readonly string TypeNotPatchable = $"Type {_typeName} cannot be patched. This is either because it has the {nameof(PreventPatchAttribute)} attribute or all of its properties are read-only or have the {nameof(PreventPatchAttribute)} attribute.";
 
     /// <summary>
     /// The error message for when an operation from is not valid.
